@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>무르익다 — 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0f1112;
+  --bg2:#171a1c;
+  --bg3:#1e2225;
+  --bg4:#252a2d;
+  --border:rgba(255,255,255,0.08);
+  --border2:rgba(255,255,255,0.14);
+  --text:#e8eaed;
+  --text2:#9aa0a6;
+  --text3:#5f6368;
+  --accent:#7cb98a;
+  --accent2:#5a9fd4;
+  --accent3:#e8a844;
+  --red:#e05a5a;
+  --glass:rgba(255,255,255,0.04);
+  --font:'Noto Sans KR',sans-serif;
+  --serif:'Noto Serif KR',serif;
+  --nav-h:52px;
+  --player-h:60px;
+}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;overflow:hidden;}
+
+/* ── NAV ── */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  height:var(--nav-h);
+  background:var(--bg2);
+  border-bottom:0.5px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;gap:12px;
+}
+.nav-logo{display:flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none;}
+.nav-logo-icon{width:28px;height:28px;border:1px solid var(--border2);border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--glass);}
+.nav-logo-icon svg{width:15px;height:15px;stroke:var(--accent);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
+.nav-logo-text{font-family:var(--serif);font-size:14px;color:var(--text);letter-spacing:0.04em;}
+.nav-center{flex:1;display:flex;align-items:center;justify-content:center;}
+.nav-tabs{display:flex;gap:2px;}
+.nav-tab{padding:5px 14px;font-size:12px;color:var(--text2);background:transparent;border:none;border-radius:5px;cursor:pointer;font-family:var(--font);transition:all 0.18s;letter-spacing:0.02em;}
+.nav-tab:hover{background:var(--bg3);color:var(--text);}
+.nav-tab.active{background:var(--bg4);color:var(--text);font-weight:500;}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.nav-time-block{text-align:right;line-height:1.3;}
+.nav-time-block .t-main{font-size:15px;font-weight:400;color:var(--text);letter-spacing:0.04em;}
+.nav-time-block .t-sub{font-size:10px;color:var(--text2);}
+.nav-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border2);}
+.menu-btn{width:32px;height:32px;background:var(--glass);border:0.5px solid var(--border);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:background 0.2s;}
+.menu-btn:hover{background:var(--bg4);}
+.menu-btn span{display:block;width:15px;height:1px;background:var(--text2);border-radius:1px;transition:all 0.28s;}
+.menu-open .menu-btn span:nth-child(1){transform:translateY(5px) rotate(45deg);}
+.menu-open .menu-btn span:nth-child(2){opacity:0;}
+.menu-open .menu-btn span:nth-child(3){transform:translateY(-5px) rotate(-45deg);}
+
+/* ── 메뉴 패널 ── */
+.menu-overlay{position:fixed;inset:0;z-index:190;background:rgba(0,0,0,0.5);opacity:0;pointer-events:none;transition:opacity 0.28s;}
+.menu-overlay.open{opacity:1;pointer-events:all;}
+.menu-panel{position:fixed;top:0;right:0;bottom:0;z-index:200;width:min(260px,78vw);background:#111518;border-left:0.5px solid var(--border2);transform:translateX(100%);transition:transform 0.32s cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column;padding:64px 0 32px;}
+.menu-panel.open{transform:translateX(0);}
+.menu-panel ul{list-style:none;padding:8px 0;flex:1;}
+.menu-panel ul li a{display:flex;align-items:center;gap:12px;padding:12px 24px;font-size:14px;color:var(--text2);text-decoration:none;transition:all 0.18s;border-left:2px solid transparent;}
+.menu-panel ul li a:hover{color:var(--text);background:var(--glass);border-left-color:var(--accent);}
+.menu-panel ul li.active a{color:var(--text);border-left-color:var(--accent);}
+.menu-panel ul li a svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:0.7;}
+
+/* ── 레이아웃 ── */
+.page{
+  position:fixed;
+  top:var(--nav-h);bottom:var(--player-h);left:0;right:0;
+  overflow-y:auto;overflow-x:hidden;
+  padding:12px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.page::-webkit-scrollbar{width:4px;}
+.page::-webkit-scrollbar-track{background:transparent;}
+.page::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* ── 상단 지표 바 ── */
+.top-bar{display:grid;grid-template-columns:auto 1fr 1fr 1fr 1fr;gap:8px;align-items:stretch;}
+
+.card{background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;padding:12px 14px;}
+.card-title{font-size:11px;color:var(--text2);margin-bottom:6px;letter-spacing:0.04em;}
+.card-value{font-size:22px;font-weight:500;color:var(--text);line-height:1.1;}
+.card-sub{font-size:11px;color:var(--text3);margin-top:4px;}
+
+.clock-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;padding:10px 14px;min-width:130px;}
+.clock-card .big-time{font-size:32px;font-weight:300;color:var(--text);letter-spacing:-0.01em;line-height:1;}
+.clock-card .date-line{font-size:11px;color:var(--text2);margin-top:5px;}
+.clock-card .holiday{font-size:10px;color:var(--accent3);margin-top:2px;}
+
+.weather-card{display:flex;align-items:center;gap:10px;background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;padding:10px 14px;}
+.weather-icon{font-size:28px;line-height:1;}
+.weather-info .w-temp{font-size:20px;font-weight:400;}
+.weather-info .w-desc{font-size:11px;color:var(--text2);margin-top:2px;}
+
+.progress-wrap{margin-top:6px;background:var(--bg4);border-radius:3px;height:5px;overflow:hidden;}
+.progress-bar{height:100%;border-radius:3px;transition:width 0.6s ease;}
+.progress-bar.green{background:var(--accent);}
+.progress-bar.blue{background:var(--accent2);}
+
+.streak-detail{font-size:10px;color:var(--text3);margin-top:5px;line-height:1.6;}
+.streak-detail span{color:var(--text2);}
+
+/* ── 하단 메인 그리드 ── */
+.main-grid{display:grid;grid-template-columns:2fr 1.2fr 1fr 0.9fr;gap:10px;flex:1;min-height:0;}
+
+/* 시간대별 계획 */
+.timetable-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;display:flex;flex-direction:column;overflow:hidden;}
+.section-header{padding:10px 14px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.section-title{font-size:12px;font-weight:500;color:var(--text);letter-spacing:0.02em;}
+.section-action{font-size:10px;color:var(--accent2);cursor:pointer;background:none;border:none;font-family:var(--font);padding:2px 6px;border-radius:4px;transition:background 0.18s;}
+.section-action:hover{background:var(--glass);}
+.timetable-body{flex:1;overflow-y:auto;padding:8px 0;}
+.timetable-body::-webkit-scrollbar{width:3px;}
+.timetable-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+.tt-row{display:grid;grid-template-columns:58px 1fr 1fr;gap:0;border-bottom:0.5px solid var(--border);align-items:stretch;}
+.tt-time{font-size:10px;color:var(--text3);padding:5px 8px;display:flex;align-items:center;border-right:0.5px solid var(--border);}
+.tt-cell{padding:4px 6px;font-size:10px;color:var(--text2);border-right:0.5px solid var(--border);min-height:28px;display:flex;align-items:center;cursor:pointer;transition:background 0.15s;word-break:keep-all;}
+.tt-cell:last-child{border-right:none;}
+.tt-cell:hover{background:var(--bg3);}
+.tt-cell.has-content{color:var(--text);}
+.tt-cell.color-pink{background:rgba(255,182,193,0.12);color:#ffb6c1;}
+.tt-cell.color-green{background:rgba(144,238,144,0.1);color:#90ee90;}
+.tt-cell.color-yellow{background:rgba(255,215,0,0.12);color:#ffd700;}
+.tt-cell.color-blue{background:rgba(135,206,235,0.1);color:#87ceeb;}
+.tt-cell.color-now{background:rgba(255,215,0,0.2);outline:1px solid rgba(255,215,0,0.4);}
+.tt-col-header{font-size:10px;color:var(--text3);padding:4px 6px;background:var(--bg3);border-bottom:0.5px solid var(--border);text-align:center;}
+
+/* 가운데 컬럼 */
+.mid-col{display:flex;flex-direction:column;gap:10px;}
+
+.schedule-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;overflow:hidden;}
+.schedule-body{padding:8px 0;}
+.schedule-item{padding:7px 14px;border-bottom:0.5px solid var(--border);cursor:pointer;transition:background 0.15s;}
+.schedule-item:last-child{border-bottom:none;}
+.schedule-item:hover{background:var(--glass);}
+.sch-title{font-size:12px;color:var(--text);font-weight:400;}
+.sch-date{font-size:10px;color:var(--text3);margin-top:2px;}
+.sch-badge{display:inline-block;font-size:9px;padding:1px 6px;border-radius:3px;margin-top:3px;}
+.sch-badge.urgent{background:rgba(224,90,90,0.2);color:var(--red);}
+.sch-badge.normal{background:rgba(90,159,212,0.15);color:var(--accent2);}
+
+.quote-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;padding:14px;}
+.quote-text{font-family:var(--serif);font-size:12px;color:var(--text2);line-height:1.7;font-style:italic;}
+.quote-source{font-size:10px;color:var(--text3);margin-top:8px;text-align:right;}
+
+/* 뽀모도로 */
+.pomo-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;overflow:hidden;}
+.pomo-body{padding:12px 14px;display:flex;flex-direction:column;align-items:center;gap:12px;}
+.pomo-ring-wrap{position:relative;width:110px;height:110px;flex-shrink:0;}
+.pomo-ring-wrap svg{transform:rotate(-90deg);}
+.pomo-ring-bg{fill:none;stroke:var(--bg4);stroke-width:8;}
+.pomo-ring-fill{fill:none;stroke:var(--red);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.5s ease;}
+.pomo-ring-rest{fill:none;stroke:var(--accent2);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.5s ease;}
+.pomo-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.pomo-time{font-size:20px;font-weight:300;color:var(--text);letter-spacing:0.04em;}
+.pomo-count{font-size:10px;color:var(--text2);margin-top:2px;}
+.pomo-controls{display:flex;gap:8px;width:100%;}
+.pomo-btn{flex:1;padding:7px;font-size:12px;background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;font-family:var(--font);transition:all 0.18s;}
+.pomo-btn:hover{background:var(--bg4);color:var(--text);}
+.pomo-btn.primary{background:var(--red);border-color:var(--red);color:#fff;font-weight:500;}
+.pomo-btn.primary:hover{background:#c04848;}
+.pomo-btn.primary.running{background:var(--accent3);border-color:var(--accent3);}
+.pomo-stats{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.pomo-stat{background:var(--bg3);border-radius:6px;padding:6px 8px;}
+.pomo-stat-label{font-size:9px;color:var(--text3);}
+.pomo-stat-val{font-size:13px;font-weight:500;color:var(--text);margin-top:2px;}
+
+/* 게시판 + 애드센스 */
+.right-col{display:flex;flex-direction:column;gap:10px;}
+.board-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;overflow:hidden;}
+.board-tabs{display:flex;border-bottom:0.5px solid var(--border);}
+.board-tab{flex:1;padding:8px;font-size:11px;color:var(--text2);background:none;border:none;cursor:pointer;font-family:var(--font);transition:all 0.18s;border-bottom:2px solid transparent;}
+.board-tab.active{color:var(--text);border-bottom-color:var(--accent);}
+.board-list{padding:4px 0;}
+.board-item{padding:7px 14px;border-bottom:0.5px solid var(--border);cursor:pointer;transition:background 0.15s;}
+.board-item:last-child{border-bottom:none;}
+.board-item:hover{background:var(--glass);}
+.board-item-title{font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.board-item-meta{font-size:10px;color:var(--text3);margin-top:2px;}
+
+.ad-slot{background:var(--bg2);border:0.5px dashed var(--border2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;min-height:80px;flex:1;}
+.ad-slot span{font-size:10px;color:var(--text3);letter-spacing:0.08em;}
+
+/* 퀵 버튼 */
+.quick-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.quick-btn{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:8px 14px;background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;transition:all 0.18s;text-decoration:none;}
+.quick-btn:hover{background:var(--bg3);border-color:var(--border2);}
+.quick-btn-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.quick-btn-label{font-size:10px;color:var(--text2);}
+.quick-add{width:36px;height:36px;border-radius:50%;background:var(--bg3);border:1px dashed var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);font-size:20px;transition:all 0.18s;}
+.quick-add:hover{background:var(--bg4);color:var(--text2);}
+
+/* ── 하단 플레이어 ── */
+.player{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  height:var(--player-h);
+  background:var(--bg2);
+  border-top:0.5px solid var(--border);
+  display:flex;align-items:center;gap:12px;
+  padding:0 16px;
+}
+.player-thumb{width:36px;height:36px;border-radius:5px;background:linear-gradient(135deg,#2a4a3a,#4a6a5a);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.player-info{flex:1;min-width:0;}
+.player-title{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.player-artist{font-size:10px;color:var(--text2);margin-top:1px;}
+.player-controls{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.ctrl-btn{background:none;border:none;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;padding:3px;border-radius:4px;transition:color 0.18s;}
+.ctrl-btn:hover{color:var(--text);}
+.ctrl-btn.play{width:30px;height:30px;background:var(--text);border-radius:50%;color:var(--bg);display:flex;align-items:center;justify-content:center;}
+.ctrl-btn.play:hover{background:var(--accent);}
+.ctrl-btn svg{width:14px;height:14px;}
+.player-progress{display:flex;align-items:center;gap:8px;flex:1;max-width:200px;}
+.p-time{font-size:10px;color:var(--text3);white-space:nowrap;}
+.p-bar{flex:1;height:3px;background:var(--bg4);border-radius:2px;cursor:pointer;position:relative;}
+.p-fill{position:absolute;top:0;left:0;bottom:0;width:35%;background:var(--text2);border-radius:2px;}
+
+/* 반응형 */
+@media(max-width:1100px){.main-grid{grid-template-columns:1.8fr 1.1fr 1fr;}.right-col{display:none;}}
+@media(max-width:860px){.main-grid{grid-template-columns:1fr 1fr;}.mid-col{display:none;}.top-bar{grid-template-columns:auto 1fr 1fr;}.top-bar .card:nth-child(5){display:none;}}
+@media(max-width:600px){.main-grid{grid-template-columns:1fr;}.pomo-card{display:none;}.nav-tabs{display:none;}.top-bar{grid-template-columns:auto 1fr 1fr;}}
+@media(max-width:480px){.player-progress{display:none;}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <a class="nav-logo" href="index.html">
+    <div class="nav-logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+    </div>
+    <div class="nav-logo-text">무르익다</div>
+  </a>
+  <div class="nav-center">
+    <div class="nav-tabs">
+      <button class="nav-tab active">대시보드</button>
+      <button class="nav-tab">퀴즈</button>
+      <button class="nav-tab">학습시간</button>
+      <button class="nav-tab">스케줄</button>
+      <button class="nav-tab">게시판</button>
+    </div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-time-block">
+      <div class="t-main" id="navClock">15:23</div>
+      <div class="t-sub" id="navDate">2026. 3. 29 (일)</div>
+    </div>
+    <div class="nav-avatar">U</div>
+    <div class="menu-btn" id="menuBtn" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+  </div>
+</nav>
+
+<!-- 메뉴 -->
+<div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+<div class="menu-panel" id="menuPanel">
+  <ul>
+    <li class="active"><a href="#"><svg viewBox="0 0 20 20"><path d="M3 9l7-7 7 7v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9z"/></svg>무르익다</a></li>
+    <li><a href="#"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"/><path d="M10 7v3l2 2"/></svg>퀴즈</a></li>
+    <li><a href="#"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.5 2.5"/></svg>학습시간</a></li>
+    <li><a href="#"><svg viewBox="0 0 20 20"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14M7 2v4M13 2v4"/></svg>스케줄</a></li>
+    <li><a href="#"><svg viewBox="0 0 20 20"><path d="M17 8H3M3 8l4-4M3 8l4 4M3 12h14M17 12l-4-4M17 12l-4 4"/></svg>게시판</a></li>
+  </ul>
+</div>
+
+<!-- 메인 페이지 -->
+<div class="page">
+
+  <!-- 상단 지표 -->
+  <div class="top-bar">
+    <div class="clock-card">
+      <div class="big-time" id="mainClock">15:23</div>
+      <div class="date-line" id="mainDate">2026. 3. 29 (일)</div>
+      <div class="holiday" id="holiday"></div>
+    </div>
+    <div class="weather-card">
+      <div class="weather-icon">⛅</div>
+      <div class="weather-info">
+        <div class="w-temp">14°C</div>
+        <div class="w-desc">서울 · 맑음</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">오늘 공부시간</div>
+      <div class="card-value" id="studyTime">2h 34m</div>
+      <div class="card-sub">목표 4h 중 <span id="studyPct">64</span>%</div>
+      <div class="progress-wrap"><div class="progress-bar green" id="studyBar" style="width:64%"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">오늘 퀴즈</div>
+      <div class="card-value">18문제</div>
+      <div class="card-sub">정답률 72%</div>
+      <div class="progress-wrap"><div class="progress-bar blue" style="width:72%"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">연속 학습</div>
+      <div class="card-value">15일</div>
+      <div class="streak-detail">
+        어제 종료 <span>23:41</span><br>
+        오늘 시작 <span>07:45</span><br>
+        최고 기록 <span>00일</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 메인 그리드 -->
+  <div class="main-grid">
+
+    <!-- 시간대별 계획 -->
+    <div class="timetable-card">
+      <div class="section-header">
+        <span class="section-title">시간대별 상세 계획</span>
+        <button class="section-action">편집</button>
+      </div>
+      <div style="display:grid;grid-template-columns:58px 1fr 1fr;border-bottom:0.5px solid var(--border);">
+        <div class="tt-col-header" style="border-right:0.5px solid var(--border);">시간</div>
+        <div class="tt-col-header" style="border-right:0.5px solid var(--border);">목표</div>
+        <div class="tt-col-header">실제</div>
+      </div>
+      <div class="timetable-body" id="timetableBody"></div>
+    </div>
+
+    <!-- 가운데 -->
+    <div class="mid-col">
+      <!-- 이번 주 일정 -->
+      <div class="schedule-card">
+        <div class="section-header">
+          <span class="section-title">이번 주 주요 일정</span>
+          <button class="section-action">+ 추가</button>
+        </div>
+        <div class="schedule-body">
+          <div class="schedule-item">
+            <div class="sch-title">KORAIL 원서접수 마감</div>
+            <div class="sch-date">3/31 (일)</div>
+            <span class="sch-badge urgent">D-2</span>
+          </div>
+          <div class="schedule-item">
+            <div class="sch-title">모의고사 응시</div>
+            <div class="sch-date">4/2 (화)</div>
+            <span class="sch-badge normal">D-4</span>
+          </div>
+          <div class="schedule-item">
+            <div class="sch-title">스터디 그룹 모임</div>
+            <div class="sch-date">4/5 (금)</div>
+            <span class="sch-badge normal">D-7</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 오늘의 한마디 -->
+      <div class="quote-card">
+        <div class="card-title" style="margin-bottom:8px;">오늘의 한마디</div>
+        <div class="quote-text">"지금 이 순간의 노력이 내일의 결과가 된다. 하루하루가 쌓여 무르익는다."</div>
+        <div class="quote-source">— 무르익다</div>
+      </div>
+
+      <!-- 퀵 버튼 -->
+      <div class="card" style="padding:12px;">
+        <div class="card-title" style="margin-bottom:10px;">바로가기</div>
+        <div class="quick-bar">
+          <div class="quick-btn">
+            <div class="quick-btn-icon" style="background:rgba(90,159,212,0.15);">📝</div>
+            <span class="quick-btn-label">퀴즈</span>
+          </div>
+          <div class="quick-btn">
+            <div class="quick-btn-icon" style="background:rgba(232,168,68,0.15);">🎵</div>
+            <span class="quick-btn-label">뮤직</span>
+          </div>
+          <div class="quick-btn">
+            <div class="quick-btn-icon" style="background:rgba(124,185,138,0.15);">✍️</div>
+            <span class="quick-btn-label">자소서</span>
+          </div>
+          <div class="quick-btn">
+            <div class="quick-btn-icon" style="background:rgba(90,159,212,0.15);">🤖</div>
+            <span class="quick-btn-label">AI 체크</span>
+          </div>
+          <div class="quick-add">+</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 뽀모도로 -->
+    <div class="pomo-card">
+      <div class="section-header">
+        <span class="section-title">뽀모도로 타이머</span>
+        <button class="section-action" onclick="openPomoSettings()">설정</button>
+      </div>
+      <div class="pomo-body">
+        <div class="pomo-ring-wrap">
+          <svg width="110" height="110" viewBox="0 0 110 110">
+            <circle class="pomo-ring-bg" cx="55" cy="55" r="46"/>
+            <circle class="pomo-ring-fill" id="pomoRing" cx="55" cy="55" r="46"
+              stroke-dasharray="289" stroke-dashoffset="72"/>
+          </svg>
+          <div class="pomo-center">
+            <div class="pomo-time" id="pomoDisplay">24:29</div>
+            <div class="pomo-count" id="pomoCount">2 / 5 회</div>
+          </div>
+        </div>
+        <div class="pomo-stats">
+          <div class="pomo-stat"><div class="pomo-stat-label">총 회차</div><div class="pomo-stat-val" id="pomoTotal">5 회</div></div>
+          <div class="pomo-stat"><div class="pomo-stat-label">싸이클</div><div class="pomo-stat-val" id="pomoCycle">25 분</div></div>
+          <div class="pomo-stat"><div class="pomo-stat-label">휴식</div><div class="pomo-stat-val" id="pomoRest">5 분</div></div>
+          <div class="pomo-stat"><div class="pomo-stat-label">완료</div><div class="pomo-stat-val" id="pomoDone">2 회</div></div>
+        </div>
+        <div class="pomo-controls">
+          <button class="pomo-btn" onclick="skipPomo()">스킵</button>
+          <button class="pomo-btn primary" id="pomoStartBtn" onclick="togglePomo()">시작</button>
+          <button class="pomo-btn" onclick="openPomoSettings()">크게 보기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 게시판 + 광고 -->
+    <div class="right-col">
+      <div class="board-card">
+        <div class="board-tabs">
+          <button class="board-tab active" onclick="switchBoard(this,'info')">정보 게시판</button>
+          <button class="board-tab" onclick="switchBoard(this,'free')">자유 게시판</button>
+        </div>
+        <div class="board-list" id="boardList"></div>
+      </div>
+      <div class="ad-slot">
+        <span>Google AdSense</span>
+        <span style="color:var(--border2);font-size:9px;">300 × 250</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 플레이어 -->
+<div class="player">
+  <div class="player-thumb">🎵</div>
+  <div class="player-info">
+    <div class="player-title">Lo-fi Study Beats — Calm Focus</div>
+    <div class="player-artist">YouTube Music 연동</div>
+  </div>
+  <div class="player-controls">
+    <button class="ctrl-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
+    <button class="ctrl-btn play" id="playBtn" onclick="togglePlay()"><svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+    <button class="ctrl-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2-8.3L11.77 12 8.5 14.3V9.7zM16 6h2v12h-2z"/></svg></button>
+  </div>
+  <div class="player-progress">
+    <span class="p-time" id="pTime">2:14</span>
+    <div class="p-bar" onclick="seekP(event,this)"><div class="p-fill" id="pFill"></div></div>
+    <span class="p-time">6:03</span>
+  </div>
+</div>
+
+<script>
+// ── 시계 ──
+const DAYS = ['일','월','화','수','목','금','토'];
+function updateClock(){
+  const n = new Date();
+  const hh = String(n.getHours()).padStart(2,'0');
+  const mm = String(n.getMinutes()).padStart(2,'0');
+  const t = hh+':'+mm;
+  document.getElementById('navClock').textContent = t;
+  document.getElementById('mainClock').textContent = t;
+  const d = `${n.getFullYear()}. ${String(n.getMonth()+1).padStart(2,'0')}. ${String(n.getDate()).padStart(2,'0')} (${DAYS[n.getDay()]})`;
+  document.getElementById('navDate').textContent = d;
+  document.getElementById('mainDate').textContent = d;
+}
+updateClock(); setInterval(updateClock,1000);
+
+// ── 타임테이블 데이터 ──
+const ttData = [
+  {t:'06:00~06:30',goal:'',real:''},
+  {t:'06:30~07:00',goal:'',real:''},
+  {t:'07:00~07:30',goal:'',real:''},
+  {t:'07:30~08:00',goal:'',real:''},
+  {t:'08:00~08:30',goal:'[N코레-파트3]\n틀린 문제 다시',real:'[N코레-파트3]\n틀린 문제 다시',gc:'pink',rc:'pink'},
+  {t:'08:30~09:00',goal:'엑셀 태블릿 정리',real:'엑셀 태블릿 정리',gc:'pink',rc:'pink'},
+  {t:'09:00~09:30',goal:'',real:''},
+  {t:'09:30~10:00',goal:'',real:''},
+  {t:'10:00~10:30',goal:'[경영 2900제]',real:'[경영 2900제]\n1400~2900',gc:'blue',rc:'blue'},
+  {t:'10:30~11:00',goal:'',real:''},
+  {t:'11:00~11:30',goal:'[N코레-파트1]',real:'',gc:'pink'},
+  {t:'11:30~12:00',goal:'[N코레-파트2]',real:'',gc:'pink'},
+  {t:'12:00~12:30',goal:'[N코레-파트3]',real:'[경영 2900제]\n1400~2900',gc:'pink',rc:'blue'},
+  {t:'12:30~13:00',goal:'',real:''},
+  {t:'13:00~13:30',goal:'[NCS-응수]\n30문',real:'[NCS-응수]\n30문',gc:'green',rc:'green'},
+  {t:'13:30~14:00',goal:'',real:''},
+  {t:'14:00~14:30',goal:'[NCS-의소]',real:'',gc:'green'},
+  {t:'14:30~15:00',goal:'[NCS-응수]',real:'[NCS-문해]\n30문',gc:'green',rc:'green'},
+  {t:'15:00~15:30',goal:'[NCS-자해]',real:'[NCS-문해]\n30문',gc:'green',rc:'green'},
+  {t:'15:30~16:00',goal:'[NCS-문해]',real:'[NCS-의소]\n15문',gc:'green',rc:'green'},
+  {t:'16:00~16:30',goal:'[경영 2900제]',real:'[NCS-의소]\n15문',gc:'blue',rc:'green'},
+  {t:'16:30~17:00',goal:'[철도법령]',real:'',gc:'yellow'},
+  {t:'17:00~17:30',goal:'',real:''},
+  {t:'17:30~18:00',goal:'🚗',real:'🚗'},
+  {t:'18:00~18:30',goal:'',real:''},
+  {t:'18:30~19:00',goal:'[경영 2900제]\n1~1400',real:'[경영 2900제]\n1~1400',gc:'blue',rc:'blue'},
+  {t:'19:00~19:30',goal:'틀린 문제 다시',real:'틀린 문제 다시',gc:'blue',rc:'blue'},
+  {t:'19:30~20:00',goal:'엑셀 태블릿 정리',real:'엑셀 태블릿 정리',gc:'blue',rc:'blue'},
+  {t:'20:00~20:30',goal:'',real:'🚗'},
+  {t:'20:30~21:00',goal:'',real:''},
+  {t:'21:00~21:30',goal:'',real:''},
+  {t:'21:30~22:00',goal:'[철도법령]',real:'[경영 2900제]\n1~1400',gc:'yellow',rc:'blue'},
+  {t:'22:00~22:30',goal:'',real:'틀린 문제 다시',rc:'blue',now:true},
+  {t:'22:30~23:00',goal:'',real:''},
+  {t:'23:00~23:30',goal:'',real:'[철도법령]',rc:'yellow'},
+  {t:'23:30~00:00',goal:'',real:''},
+  {t:'00:00~00:30',goal:'',real:''},
+];
+
+function buildTimetable(){
+  const body = document.getElementById('timetableBody');
+  body.innerHTML = ttData.map(row=>{
+    const gc = row.gc ? `color-${row.gc}` : '';
+    const rc = row.rc ? `color-${row.rc}` : '';
+    const now = row.now ? 'color-now' : '';
+    const gHas = row.goal ? 'has-content' : '';
+    const rHas = row.real ? 'has-content' : '';
+    return `<div class="tt-row">
+      <div class="tt-time">${row.t}</div>
+      <div class="tt-cell ${gc} ${gHas}" onclick="editCell(this)" style="white-space:pre-line;">${row.goal||''}</div>
+      <div class="tt-cell ${rc} ${rHas} ${now}" onclick="editCell(this)" style="white-space:pre-line;">${row.real||''}</div>
+    </div>`;
+  }).join('');
+  // 현재 시간 행으로 스크롤
+  setTimeout(()=>{
+    const nowRow = body.querySelector('.color-now');
+    if(nowRow) nowRow.scrollIntoView({block:'center',behavior:'smooth'});
+  },400);
+}
+buildTimetable();
+
+function editCell(el){
+  if(el.querySelector('textarea')) return;
+  const orig = el.textContent;
+  el.textContent = '';
+  const ta = document.createElement('textarea');
+  ta.value = orig;
+  ta.style.cssText='width:100%;height:48px;background:transparent;border:none;color:inherit;font-family:inherit;font-size:10px;resize:none;outline:none;';
+  el.appendChild(ta);
+  ta.focus();
+  ta.onblur = ()=>{ el.textContent = ta.value; el.style.whiteSpace='pre-line'; };
+  ta.onkeydown = e=>{ if(e.key==='Escape'){ el.textContent=orig; } };
+}
+
+// ── 게시판 ──
+const boards = {
+  info:[
+    {title:'KORAIL 운전직 시험 일정 총정리 2026',meta:'공지 · 댓글 12 · 2시간 전'},
+    {title:'철도법령 단원별 핵심 정리 공유합니다',meta:'study_k · 댓글 7 · 3시간 전'},
+    {title:'NCS 수리 공식 모음 PDF',meta:'레일러 · 댓글 4 · 어제'},
+    {title:'경영학 2900제 풀이 순서 추천',meta:'익명 · 댓글 9 · 어제'},
+    {title:'모의고사 오답 정리 방법',meta:'user42 · 댓글 3 · 2일 전'},
+  ],
+  free:[
+    {title:'1주일 남았는데 불안해요',meta:'익명 · 댓글 18 · 30분 전'},
+    {title:'합격 후기 올립니다 (운전직)',meta:'합격자 · 댓글 34 · 1시간 전'},
+    {title:'같이 스터디 하실 분 구해요',meta:'서울 · 댓글 6 · 2시간 전'},
+    {title:'공부하다 지칠 때 어떻게 하세요?',meta:'익명 · 댓글 11 · 어제'},
+    {title:'무르익다 쓰니까 관리가 잘 돼요',meta:'user91 · 댓글 2 · 2일 전'},
+  ]
+};
+let curBoard = 'info';
+function renderBoard(){
+  document.getElementById('boardList').innerHTML = boards[curBoard].map(it=>`
+    <div class="board-item">
+      <div class="board-item-title">${it.title}</div>
+      <div class="board-item-meta">${it.meta}</div>
+    </div>`).join('');
+}
+function switchBoard(el,key){
+  document.querySelectorAll('.board-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active'); curBoard=key; renderBoard();
+}
+renderBoard();
+
+// ── 뽀모도로 ──
+let pomoRunning=false, pomoSec=24*60+29, pomoTotal=5, pomoCycleMin=25, pomoRestMin=5, pomoDone=2;
+let pomoTimer=null;
+const CIRC=289;
+
+function updatePomoRing(){
+  const total=pomoCycleMin*60;
+  const pct=pomoSec/total;
+  const offset=CIRC*(1-pct);
+  document.getElementById('pomoRing').style.strokeDashoffset=Math.round(offset);
+}
+function updatePomoDisplay(){
+  const m=Math.floor(pomoSec/60), s=String(pomoSec%60).padStart(2,'0');
+  document.getElementById('pomoDisplay').textContent=`${m}:${s}`;
+  document.getElementById('pomoCount').textContent=`${pomoDone} / ${pomoTotal} 회`;
+  document.getElementById('pomoTotal').textContent=pomoTotal+' 회';
+  document.getElementById('pomoCycle').textContent=pomoCycleMin+' 분';
+  document.getElementById('pomoRest').textContent=pomoRestMin+' 분';
+  document.getElementById('pomoDone').textContent=pomoDone+' 회';
+  updatePomoRing();
+}
+updatePomoDisplay();
+
+function togglePomo(){
+  pomoRunning=!pomoRunning;
+  const btn=document.getElementById('pomoStartBtn');
+  if(pomoRunning){
+    btn.textContent='일시정지'; btn.classList.add('running');
+    pomoTimer=setInterval(()=>{
+      if(pomoSec>0){ pomoSec--; updatePomoDisplay(); }
+      else{ clearInterval(pomoTimer); pomoRunning=false; btn.textContent='시작'; btn.classList.remove('running'); pomoDone++; pomoSec=pomoCycleMin*60; updatePomoDisplay(); }
+    },1000);
+  } else {
+    clearInterval(pomoTimer); btn.textContent='시작'; btn.classList.remove('running');
+  }
+}
+function skipPomo(){ clearInterval(pomoTimer); pomoRunning=false; pomoDone++; pomoSec=pomoCycleMin*60; document.getElementById('pomoStartBtn').textContent='시작'; document.getElementById('pomoStartBtn').classList.remove('running'); updatePomoDisplay(); }
+function openPomoSettings(){ window.location.href='mureuikda-pomo.html'; }
+
+// ── 메뉴 ──
+let menuOpen=false;
+function toggleMenu(){
+  menuOpen=!menuOpen;
+  document.getElementById('menuPanel').classList.toggle('open',menuOpen);
+  document.getElementById('menuOverlay').classList.toggle('open',menuOpen);
+  document.getElementById('nav').classList.toggle('menu-open',menuOpen);
+}
+
+// ── 플레이어 ──
+let playing=false, elapsed=134, total=363, pTimer=null;
+function togglePlay(){
+  playing=!playing;
+  const icon=document.getElementById('playIcon');
+  if(playing){ icon.innerHTML='<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; pTimer=setInterval(tickP,1000); }
+  else { icon.innerHTML='<path d="M8 5v14l11-7z"/>'; clearInterval(pTimer); }
+}
+function tickP(){ elapsed=(elapsed+1)%total; const m=Math.floor(elapsed/60),s=String(elapsed%60).padStart(2,'0'); document.getElementById('pTime').textContent=`${m}:${s}`; document.getElementById('pFill').style.width=Math.round(elapsed/total*100)+'%'; }
+function seekP(e,bar){ const r=bar.getBoundingClientRect(); const ratio=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); elapsed=Math.floor(ratio*total); tickP(); }
+</script>
+</body>
+</html>
