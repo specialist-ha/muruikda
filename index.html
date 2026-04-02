@@ -45,7 +45,7 @@ html, body {
   -webkit-font-smoothing:antialiased;
 }
 @media(max-width:768px){
-  html, body { overflow-y:auto; height:auto; }
+  html, body { overflow-y:auto; height:auto; scroll-behavior:smooth; }
   #pageWrap { position:static; overflow:visible; height:auto; }
 }
 
@@ -62,6 +62,7 @@ body::-webkit-scrollbar { display:none; }
   overflow-x:hidden;
   scrollbar-width:none;
   -ms-overflow-style:none;
+  scroll-behavior:smooth;
 }
 #pageWrap::-webkit-scrollbar { display:none; }
 
